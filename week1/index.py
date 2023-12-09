@@ -17,7 +17,7 @@ from time import perf_counter
 import concurrent.futures
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logging.basicConfig(format='%(levelname)s:%(message)s')
 
 # NOTE: this is not a complete list of fields.  If you wish to add more, put in the appropriate XPath expression.
@@ -215,6 +215,16 @@ def main(source_dir: str, file_glob: str, index_name: str, workers: int, host: s
     client = get_opensearch(host)
 
     #TODO: set the refresh interval
+    refresh_settings = {
+        'settings': {
+            'index': {
+                'refresh_interval': refresh_interval
+            }
+        }
+    }
+
+    client.indices.put_settings(index = index_name, body= refresh_settings)
+
     logger.debug(client.indices.get_settings(index=index_name))
     start = perf_counter()
     time_indexing = 0
@@ -228,6 +238,16 @@ def main(source_dir: str, file_glob: str, index_name: str, workers: int, host: s
     finish = perf_counter()
     logger.info(f'Done. {docs_indexed} were indexed in {(finish - start)/60} minutes.  Total accumulated time spent in `bulk` indexing: {time_indexing/60} minutes')
     # TODO set refresh interval back to 5s
+    refresh_settings = {
+        'settings': {
+            'index': {
+                'refresh_interval': '5s'
+            }
+        }
+    }
+
+    client.indices.put_settings(index = index_name, body= refresh_settings)
+
     logger.debug(client.indices.get_settings(index=index_name))
 
 if __name__ == "__main__":
